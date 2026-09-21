@@ -1,0 +1,26 @@
+# ROS2 Build Output
+
+ros2_ws/build
+ros2_ws/install
+ros2_ws/log
+
+# Python
+__pychache__
+*.pyc
+
+# VSCode
+.vscode/
+
+# JetBrains
+.idea/
+
+# Temporary Files
+*.swp
+*.tmp
+
+# ROS bag
+*.db3
+*.mcap
+
+# Linux
+.DS_Store
