@@ -26,6 +26,7 @@ endif()
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/OperatorCommand.msg"
+  "msg/SensorData.msg"
 )
 
 ament_package()
