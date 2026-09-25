@@ -40,6 +40,8 @@ class SensorNode(Node):
 
     def publish_data(self):
 
+        print("timer running")
+
         imu_data = self.imu.get_data()
 
         pressure_data = self.pressure.get_data()
