@@ -1,221 +1,201 @@
-#!/usr/bin/env python3
-
 from smbus2 import SMBus
 
 import time
 
-ADDR = 0x76
+class MS5803Driver:
 
-bus = SMBus(1)
+    ADDRESS = 0x76
 
-#========================
+    def __init__(self):
 
-# Reset Sensor
+        self.bus = SMBus(1)
 
-#========================
+        self.bus.write_byte(
 
-bus.write_byte(ADDR, 0x1E)
+            self.ADDRESS,
 
-time.sleep(0.1)
-
-#========================
-
-# Read PROM Coefficients
-
-#========================
-
-C = [0] * 7
-
-for i in range(1, 7):
-
-    reg = 0xA0 + (i * 2)
-
-    data = bus.read_i2c_block_data(
-
-        ADDR,
-
-        reg,
-
-        2
-
-    )
-
-    C[i] = (data[0] << 8) | data[1]
-
-C1 = C[1]
-
-C2 = C[2]
-
-C3 = C[3]
-
-C4 = C[4]
-
-C5 = C[5]
-
-C6 = C[6]
-
-print("Calibration Data")
-
-print(f"C1 = {C1}")
-
-print(f"C2 = {C2}")
-
-print(f"C3 = {C3}")
-
-print(f"C4 = {C4}")
-
-print(f"C5 = {C5}")
-
-print(f"C6 = {C6}")
-
-#========================
-
-# Read D1
-
-#========================
-
-def read_pressure_raw():
-
-    # OSR 4096
-
-    bus.write_byte(ADDR, 0x48)
-
-    time.sleep(0.05)
-
-    data = bus.read_i2c_block_data(
-
-        ADDR,
-
-        0x00,
-
-        3
-
-    )
-
-    D1 = (
-
-        (data[0] << 16)
-
-        |
-
-        (data[1] << 8)
-
-        |
-
-        data[2]
-
-    )
-
-    return D1
-
-#========================
-
-# Read D2
-
-#========================
-
-def read_temperature_raw():
-
-    # OSR 4096
-
-    bus.write_byte(ADDR, 0x58)
-
-    time.sleep(0.05)
-
-    data = bus.read_i2c_block_data(
-
-        ADDR,
-
-        0x00,
-
-        3
-
-    )
-
-    D2 = (
-
-        (data[0] << 16)
-
-        |
-
-        (data[1] << 8)
-
-        |
-
-        data[2]
-
-    )
-
-    return D2
-
-#========================
-
-# Main Loop
-
-#========================
-
-while True:
-
-    D1 = read_pressure_raw()
-
-    D2 = read_temperature_raw()
-
-    dT = D2 - (C5 * 256)
-
-    TEMP = 2000 + (dT * C6) / 8388608
-
-    OFF = (
-
-        C2 * 65536
-
-        +
-
-        (C4 * dT) / 128
-
-    )
-
-    SENS = (
-
-        C1 * 32768
-
-        +
-
-        (C3 * dT) / 256
-
-    )
-
-    P = (
-
-        (
-
-            D1 * SENS / 2097152
+            0x1E
 
         )
 
-        - OFF
+        time.sleep(0.1)
 
-    ) / 32768
+        self.read_prom()
 
-    temperature_c = TEMP / 100.0
+    def read_prom(self):
 
-    pressure_mbar = P / 100.0
+        coeff = []
 
-    depth_m = (
+        for i in range(1, 7):
 
-        pressure_mbar - 1013.25
+            reg = 0xA0 + (i * 2)
 
-    ) / 100.0
+            data = self.bus.read_i2c_block_data(
 
-    print("=" * 50)
+                self.ADDRESS,
 
-    print(f"D1 Raw        : {D1}")
+                reg,
 
-    print(f"D2 Raw        : {D2}")
+                2
 
-    print(f"Temperature   : {temperature_c:.2f} C")
+            )
 
-    print(f"Pressure      : {pressure_mbar:.2f} mbar")
+            value = (
 
-    print(f"Depth         : {depth_m:.2f} m")
+                (data[0] << 8)
 
-    time.sleep(1)
+                |
+
+                data[1]
+
+            )
+
+            coeff.append(value)
+
+        self.C1 = coeff[0]
+
+        self.C2 = coeff[1]
+
+        self.C3 = coeff[2]
+
+        self.C4 = coeff[3]
+
+        self.C5 = coeff[4]
+
+        self.C6 = coeff[5]
+
+    def read_d1(self):
+
+        self.bus.write_byte(
+
+            self.ADDRESS,
+
+            0x48
+
+        )
+
+        time.sleep(0.05)
+
+        data = self.bus.read_i2c_block_data(
+
+            self.ADDRESS,
+
+            0x00,
+
+            3
+
+        )
+
+        return (
+
+            (data[0] << 16)
+
+            |
+
+            (data[1] << 8)
+
+            |
+
+            data[2]
+
+        )
+
+    def read_d2(self):
+
+        self.bus.write_byte(
+
+            self.ADDRESS,
+
+            0x58
+
+        )
+
+        time.sleep(0.05)
+
+        data = self.bus.read_i2c_block_data(
+
+            self.ADDRESS,
+
+            0x00,
+
+            3
+
+        )
+
+        return (
+
+            (data[0] << 16)
+
+            |
+
+            (data[1] << 8)
+
+            |
+
+            data[2]
+
+        )
+
+    def get_data(self):
+
+        D1 = self.read_d1()
+
+        D2 = self.read_d2()
+
+        dT = D2 - (self.C5 * 256)
+
+        TEMP = (
+
+            2000 +
+
+            dT * self.C6 / 8388608
+
+        )
+
+        OFF = (
+
+            self.C2 * 65536 +
+
+            (self.C4 * dT) / 128
+
+        )
+
+        SENS = (
+
+            self.C1 * 32768 +
+
+            (self.C3 * dT) / 256
+
+        )
+
+        pressure = (
+
+            (
+
+                D1 * SENS / 2097152
+
+            ) - OFF
+
+        ) / 32768
+
+        temperature_c = TEMP / 100.0
+
+        pressure_mbar = pressure / 100.0
+
+        depth_m = (
+
+            pressure_mbar - 1013.25
+
+        ) / 100.0
+
+        return {
+
+            "pressure_mbar": pressure_mbar,
+
+            "temperature_c": temperature_c,
+
+            "depth_m": depth_m,
+
+            "pressure_ok": True
+
+        }

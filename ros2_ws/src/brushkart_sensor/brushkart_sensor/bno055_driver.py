@@ -2,66 +2,108 @@ from smbus2 import SMBus
 
 import time
 
-ADDRESS = 0x29
+class BNO055Driver:
 
-bus = SMBus(1)
+    ADDRESS = 0x29
 
-def read_signed_16(reg):
+    def __init__(self):
 
-    lsb = bus.read_byte_data(ADDRESS, reg)
+        self.bus = SMBus(1)
 
-    msb = bus.read_byte_data(ADDRESS, reg + 1)
+        # CONFIG MODE
 
-    value = (msb << 8) | lsb
+        self.bus.write_byte_data(
 
-    if value > 32767:
+            self.ADDRESS,
 
-        value -= 65536
+            0x3D,
 
-    return value
+            0x00
 
-while True:
+        )
 
-    yaw   = read_signed_16(0x1A) / 16.0
+        time.sleep(0.1)
 
-    roll  = read_signed_16(0x1C) / 16.0
+        # NDOF MODE
 
-    pitch = read_signed_16(0x1E) / 16.0
+        self.bus.write_byte_data(
 
-    accel_x = read_signed_16(0x08) / 100.0
+            self.ADDRESS,
 
-    accel_y = read_signed_16(0x0A) / 100.0
+            0x3D,
 
-    accel_z = read_signed_16(0x0C) / 100.0
+            0x0C
 
-    gyro_x = read_signed_16(0x14) / 16.0
+        )
 
-    gyro_y = read_signed_16(0x16) / 16.0
+        time.sleep(1)
 
-    gyro_z = read_signed_16(0x18) / 16.0
+    def read_signed_16(self, reg):
 
-    print("=" * 50)
+        lsb = self.bus.read_byte_data(
 
-    print(f"Yaw   : {yaw:.2f}")
+            self.ADDRESS,
 
-    print(f"Roll  : {roll:.2f}")
+            reg
 
-    print(f"Pitch : {pitch:.2f}")
+        )
 
-    print()
+        msb = self.bus.read_byte_data(
 
-    print(f"Accel X : {accel_x:.2f}")
+            self.ADDRESS,
 
-    print(f"Accel Y : {accel_y:.2f}")
+            reg + 1
 
-    print(f"Accel Z : {accel_z:.2f}")
+        )
 
-    print()
+        value = (msb << 8) | lsb
 
-    print(f"Gyro X : {gyro_x:.2f}")
+        if value > 32767:
 
-    print(f"Gyro Y : {gyro_y:.2f}")
+            value -= 65536
 
-    print(f"Gyro Z : {gyro_z:.2f}")
+        return value
 
-    time.sleep(1)
+    def get_data(self):
+
+        yaw = self.read_signed_16(0x1A) / 16.0
+
+        roll = self.read_signed_16(0x1C) / 16.0
+
+        pitch = self.read_signed_16(0x1E) / 16.0
+
+        accel_x = self.read_signed_16(0x08) / 100.0
+
+        accel_y = self.read_signed_16(0x0A) / 100.0
+
+        accel_z = self.read_signed_16(0x0C) / 100.0
+
+        gyro_x = self.read_signed_16(0x14) / 16.0
+
+        gyro_y = self.read_signed_16(0x16) / 16.0
+
+        gyro_z = self.read_signed_16(0x18) / 16.0
+
+        return {
+
+            "roll_deg": roll,
+
+            "pitch_deg": pitch,
+
+            "yaw_deg": yaw,
+
+            "accel_x": accel_x,
+
+            "accel_y": accel_y,
+
+            "accel_z": accel_z,
+
+            "gyro_x": gyro_x,
+
+            "gyro_y": gyro_y,
+
+            "gyro_z": gyro_z,
+
+            "imu_ok": True
+
+        }
