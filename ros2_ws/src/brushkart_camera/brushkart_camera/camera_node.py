@@ -2,6 +2,8 @@
 
 import cv2
 
+import time
+
 import rclpy
 
 from rclpy.node import Node
@@ -9,6 +11,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 
 from cv_bridge import CvBridge
+
+from rclpy.qos import qos_profile_sensor_data
 
 class CameraNode(Node):
 
@@ -22,7 +26,7 @@ class CameraNode(Node):
 
             '/camera/raw_image',
 
-            10
+            qos_profile_sensor_data
 
         )
 
@@ -40,11 +44,13 @@ class CameraNode(Node):
 
             return
 
+        # TEST DULU RESOLUSI KECIL
+
         self.cap.set(
 
             cv2.CAP_PROP_FRAME_WIDTH,
 
-            1280
+            640
 
         )
 
@@ -52,13 +58,21 @@ class CameraNode(Node):
 
             cv2.CAP_PROP_FRAME_HEIGHT,
 
-            720
+            480
 
         )
 
+        self.frame_counter = 0
+
+        self.last_time = time.time()
+
+        self.saved_debug_frame = False
+
+        # 10 FPS dulu
+
         self.timer = self.create_timer(
 
-            1.0 / 20.0,
+            0.1,
 
             self.publish_image
 
@@ -78,11 +92,59 @@ class CameraNode(Node):
 
             self.get_logger().warning(
 
-                'Frame gagal dibaca'
+                'Gagal membaca frame'
 
             )
 
             return
+
+        if frame is None:
+
+            self.get_logger().warning(
+
+                'Frame None'
+
+            )
+
+            return
+
+        mean_pixel = frame.mean()
+
+        self.frame_counter += 1
+
+        now = time.time()
+
+        if now - self.last_time >= 1.0:
+
+            self.get_logger().info(
+
+                f'FPS={self.frame_counter}  Mean={mean_pixel:.1f}'
+
+            )
+
+            self.frame_counter = 0
+
+            self.last_time = now
+
+        # simpan sekali untuk debugging
+
+        if not self.saved_debug_frame:
+
+            cv2.imwrite(
+
+                "/tmp/test_ros.jpg",
+
+                frame
+
+            )
+
+            self.saved_debug_frame = True
+
+            self.get_logger().info(
+
+                'Debug frame disimpan ke /tmp/test_ros.jpg'
+
+            )
 
         msg = self.bridge.cv2_to_imgmsg(
 
@@ -111,12 +173,22 @@ def main(args=None):
 
     node = CameraNode()
 
-    rclpy.spin(node)
+    try:
 
-    node.destroy_node()
+        rclpy.spin(node)
 
-    rclpy.shutdown()
+    except KeyboardInterrupt:
+
+        pass
+
+    finally:
+
+        node.destroy_node()
+
+        rclpy.shutdown()
 
 if __name__ == '__main__':
 
     main()
+
+ 
