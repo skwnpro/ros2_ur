@@ -104,7 +104,7 @@ class CameraNode(Node):
 
         self.timer = self.create_timer(
 
-            0.05,   # 20 FPS
+            0.1,   # 20 FPS
 
             self.publish_image
 
