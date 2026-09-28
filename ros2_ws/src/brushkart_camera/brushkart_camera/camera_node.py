@@ -104,7 +104,7 @@ class CameraNode(Node):
 
         self.timer = self.create_timer(
 
-            0.2,   # 5 FPS
+            0.05,   # 20 FPS
 
             self.publish_image
 
@@ -150,7 +150,7 @@ class CameraNode(Node):
 
             frame,
 
-            (640, 480)
+            (320, 240)
 
         )
 
@@ -212,7 +212,7 @@ class CameraNode(Node):
 
                 cv2.IMWRITE_JPEG_QUALITY,
 
-                70
+                50
 
             ]
 
