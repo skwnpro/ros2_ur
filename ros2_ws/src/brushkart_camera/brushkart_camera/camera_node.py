@@ -194,6 +194,11 @@ class CameraNode(Node):
 
             )
 
+        frame = cv2.rezise(
+            frame,
+            (640, 480)
+        )
+
         msg = self.bridge.cv2_to_imgmsg(
 
             frame,
