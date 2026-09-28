@@ -50,7 +50,19 @@ class CameraNode(Node):
 
         self.bridge = CvBridge()
 
-        self.cap = cv2.VideoCapture(0)
+        #
+
+        # Paksa backend V4L2
+
+        #
+
+        self.cap = cv2.VideoCapture(
+
+            0,
+
+            cv2.CAP_V4L2
+
+        )
 
         if not self.cap.isOpened():
 
@@ -60,7 +72,35 @@ class CameraNode(Node):
 
             )
 
-            return
+            raise RuntimeError(
+
+                'Camera open failed'
+
+            )
+
+        #
+
+        # Buang frame awal
+
+        # Auto exposure / gain stabil dulu
+
+        #
+
+        self.get_logger().info(
+
+            'Camera warmup...'
+
+        )
+
+        for _ in range(10):
+
+            self.cap.read()
+
+        self.get_logger().info(
+
+            'Camera warmup selesai'
+
+        )
 
         self.frame_counter = 0
 
@@ -68,9 +108,15 @@ class CameraNode(Node):
 
         self.saved_debug_frame = False
 
+        #
+
+        # 10 FPS dulu buat testing
+
+        #
+
         self.timer = self.create_timer(
 
-            1.0 / 10.0,
+            0.1,
 
             self.publish_image
 
@@ -124,6 +170,12 @@ class CameraNode(Node):
 
             self.last_time = now
 
+        #
+
+        # Simpan sekali untuk debugging
+
+        #
+
         if not self.saved_debug_frame:
 
             cv2.imwrite(
@@ -162,7 +214,9 @@ class CameraNode(Node):
 
     def destroy_node(self):
 
-        self.cap.release()
+        if self.cap.isOpened():
+
+            self.cap.release()
 
         super().destroy_node()
 
@@ -182,9 +236,21 @@ def main(args=None):
 
     finally:
 
-        node.destroy_node()
+        try:
 
-        rclpy.shutdown()
+            node.destroy_node()
+
+        except Exception:
+
+            pass
+
+        try:
+
+            rclpy.shutdown()
+
+        except Exception:
+
+            pass
 
 if __name__ == '__main__':
 
