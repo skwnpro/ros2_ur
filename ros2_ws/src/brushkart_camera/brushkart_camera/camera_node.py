@@ -12,7 +12,15 @@ from sensor_msgs.msg import Image
 
 from cv_bridge import CvBridge
 
-from rclpy.qos import qos_profile_sensor_data
+from rclpy.qos import (
+
+    QoSProfile,
+
+    ReliabilityPolicy,
+
+    HistoryPolicy
+
+)
 
 class CameraNode(Node):
 
@@ -20,13 +28,23 @@ class CameraNode(Node):
 
         super().__init__('camera_node')
 
+        qos = QoSProfile(
+
+            reliability=ReliabilityPolicy.RELIABLE,
+
+            history=HistoryPolicy.KEEP_LAST,
+
+            depth=10
+
+        )
+
         self.publisher_ = self.create_publisher(
 
             Image,
 
             '/camera/raw_image',
 
-            qos_profile_sensor_data
+            qos
 
         )
 
@@ -38,19 +56,17 @@ class CameraNode(Node):
 
             self.get_logger().error(
 
-                'Gagal membuka /dev/video0'
+                'Gagal membuka kamera'
 
             )
 
             return
 
-        # TEST DULU RESOLUSI KECIL
-
         self.cap.set(
 
             cv2.CAP_PROP_FRAME_WIDTH,
 
-            640
+            1280
 
         )
 
@@ -58,7 +74,7 @@ class CameraNode(Node):
 
             cv2.CAP_PROP_FRAME_HEIGHT,
 
-            480
+            720
 
         )
 
@@ -68,11 +84,9 @@ class CameraNode(Node):
 
         self.saved_debug_frame = False
 
-        # 10 FPS dulu
-
         self.timer = self.create_timer(
 
-            0.1,
+            1.0 / 10.0,
 
             self.publish_image
 
@@ -118,15 +132,13 @@ class CameraNode(Node):
 
             self.get_logger().info(
 
-                f'FPS={self.frame_counter}  Mean={mean_pixel:.1f}'
+                f'FPS={self.frame_counter} Mean={mean_pixel:.1f}'
 
             )
 
             self.frame_counter = 0
 
             self.last_time = now
-
-        # simpan sekali untuk debugging
 
         if not self.saved_debug_frame:
 
@@ -142,7 +154,7 @@ class CameraNode(Node):
 
             self.get_logger().info(
 
-                'Debug frame disimpan ke /tmp/test_ros.jpg'
+                'Debug image saved: /tmp/test_ros.jpg'
 
             )
 
@@ -154,8 +166,11 @@ class CameraNode(Node):
 
         )
 
-        msg.header.stamp = \
+        msg.header.stamp = (
+
             self.get_clock().now().to_msg()
+
+        )
 
         msg.header.frame_id = "camera"
 
@@ -190,5 +205,3 @@ def main(args=None):
 if __name__ == '__main__':
 
     main()
-
- 
