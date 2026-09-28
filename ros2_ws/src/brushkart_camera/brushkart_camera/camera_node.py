@@ -8,9 +8,7 @@ import rclpy
 
 from rclpy.node import Node
 
-from sensor_msgs.msg import Image
-
-from cv_bridge import CvBridge
+from sensor_msgs.msg import CompressedImage
 
 from rclpy.qos import (
 
@@ -40,21 +38,13 @@ class CameraNode(Node):
 
         self.publisher_ = self.create_publisher(
 
-            Image,
+            CompressedImage,
 
-            '/camera/raw_image',
+            '/camera/compressed',
 
             qos
 
         )
-
-        self.bridge = CvBridge()
-
-        #
-
-        # Paksa backend V4L2
-
-        #
 
         self.cap = cv2.VideoCapture(
 
@@ -78,19 +68,17 @@ class CameraNode(Node):
 
             )
 
-        #
-
-        # Buang frame awal
-
-        # Auto exposure / gain stabil dulu
-
-        #
-
         self.get_logger().info(
 
             'Camera warmup...'
 
         )
+
+        #
+
+        # Buang frame awal
+
+        #
 
         for _ in range(10):
 
@@ -110,13 +98,13 @@ class CameraNode(Node):
 
         #
 
-        # 10 FPS dulu buat testing
+        # FPS
 
         #
 
         self.timer = self.create_timer(
 
-            0.2,
+            0.2,   # 5 FPS
 
             self.publish_image
 
@@ -152,6 +140,20 @@ class CameraNode(Node):
 
             return
 
+        #
+
+        # Resize image
+
+        #
+
+        frame = cv2.resize(
+
+            frame,
+
+            (640, 480)
+
+        )
+
         mean_pixel = frame.mean()
 
         self.frame_counter += 1
@@ -172,7 +174,7 @@ class CameraNode(Node):
 
         #
 
-        # Simpan sekali untuk debugging
+        # Simpan 1 frame debug
 
         #
 
@@ -194,18 +196,39 @@ class CameraNode(Node):
 
             )
 
-        frame = cv2.resize(
+        #
+
+        # JPEG Encode
+
+        #
+
+        success, buffer = cv2.imencode(
+
+            '.jpg',
+
             frame,
-            (320, 240)
+
+            [
+
+                cv2.IMWRITE_JPEG_QUALITY,
+
+                70
+
+            ]
+
         )
 
-        msg = self.bridge.cv2_to_imgmsg(
+        if not success:
 
-            frame,
+            self.get_logger().warning(
 
-            encoding='bgr8'
+                'JPEG encode gagal'
 
-        )
+            )
+
+            return
+
+        msg = CompressedImage()
 
         msg.header.stamp = (
 
@@ -214,6 +237,10 @@ class CameraNode(Node):
         )
 
         msg.header.frame_id = "camera"
+
+        msg.format = "jpeg"
+
+        msg.data = buffer.tobytes()
 
         self.publisher_.publish(msg)
 
