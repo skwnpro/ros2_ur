@@ -62,22 +62,6 @@ class CameraNode(Node):
 
             return
 
-        self.cap.set(
-
-            cv2.CAP_PROP_FRAME_WIDTH,
-
-            1280
-
-        )
-
-        self.cap.set(
-
-            cv2.CAP_PROP_FRAME_HEIGHT,
-
-            720
-
-        )
-
         self.frame_counter = 0
 
         self.last_time = time.time()
