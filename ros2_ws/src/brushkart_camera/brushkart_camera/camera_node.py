@@ -116,7 +116,7 @@ class CameraNode(Node):
 
         self.timer = self.create_timer(
 
-            0.1,
+            0.2,
 
             self.publish_image
 
@@ -196,7 +196,7 @@ class CameraNode(Node):
 
         frame = cv2.resize(
             frame,
-            (640, 480)
+            (320, 240)
         )
 
         msg = self.bridge.cv2_to_imgmsg(
