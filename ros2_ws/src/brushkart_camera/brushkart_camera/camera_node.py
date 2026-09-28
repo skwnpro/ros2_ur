@@ -194,7 +194,7 @@ class CameraNode(Node):
 
             )
 
-        frame = cv2.rezise(
+        frame = cv2.resize(
             frame,
             (640, 480)
         )
