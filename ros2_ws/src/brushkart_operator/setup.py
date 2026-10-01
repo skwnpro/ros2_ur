@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-package_name = 'brushkart_gateway'
+package_name = 'brushkart_operator'
 
 setup(
     name=package_name,
@@ -16,15 +16,15 @@ setup(
     maintainer='exedy',
     maintainer_email='skwn.pro@gmail.com',
     description='TODO: Package description',
-    license='TODO: License declaration',
+    license='Apache-2.0',
     extras_require={
         'test': [
             'pytest',
         ],
     },
     entry_points={
-        'console_scripts':[
-		'command_gateway_node = brushkart_gateway.command_gateway_node:main',
+        'console_scripts': [
+            'relay_operator_node = brushkart_operator.relay_operator_node:main'
         ],
     },
 )
