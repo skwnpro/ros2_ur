@@ -15,7 +15,7 @@
   <depend>rclpy</depend>
   <depend>std_msgs</depend>
   <depend>brushkart_msgs</depend>
-  <depend>brushkart_utils</depend>
+  <depend>python3-psutil</depend>
 
   <export>
     <build_type>ament_python</build_type>
