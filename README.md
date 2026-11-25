@@ -85,3 +85,27 @@ air sampai sensor diganti varian yang sesuai (mis. MS5837-30BA).
 Tekanan permukaan dikalibrasi otomatis oleh `sensor_node` dari
 20 sampel pertama setelah start (robot harus sedang di permukaan),
 atau diisi lewat parameter `surface_pressure_mbar`.
+
+## Sensor ultrasonik JSN-SR04T (depan & belakang)
+
+Dua modul **JSN-SR04T-V3.3** (waterproof) mendeteksi ujung kapal:
+sensor depan/belakang menghadap arah gerak; selama ada lambung di
+depan, jarak terbaca kecil — begitu pantulan hilang, robot tahu dia
+sudah di ujung.
+
+| Sensor | Trig (BCM) | Echo (BCM) | Topic |
+|---|---|---|---|
+| Depan | 17 | 27 | `/range_front` (`sensor_msgs/Range`) |
+| Belakang | 20 | 21 | `/range_back` (`sensor_msgs/Range`) |
+
+Aturan yang dipegang `ultrasonic_node`:
+- **Kecepatan suara 1480 m/s (air)**, bukan 343 m/s (udara) — parameter
+  `sound_speed_m_s`, bisa dikalibrasi (air laut ~1500–1530 m/s).
+- **`range = -1.0` berarti tidak ada pantulan** — kondisi valid
+  ("ujung ketemu"), bukan fault sensor.
+- Board PCB **tidak** waterproof — hanya transducer-nya. Board tetap
+  di dalam housing kering.
+- Dua sensor dibaca **berurutan**, bukan bersamaan (anti-crosstalk),
+  5 Hz.
+
+Jalankan sendiri (tanpa launch): `ros2 run brushkart_sensor ultrasonic_node`

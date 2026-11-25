@@ -25,6 +25,7 @@ setup(
     entry_points={
         'console_scripts': [
             'sensor_node = brushkart_sensor.sensor_node:main',
+            'ultrasonic_node = brushkart_sensor.ultrasonic_node:main',
         ],
     },
 )
