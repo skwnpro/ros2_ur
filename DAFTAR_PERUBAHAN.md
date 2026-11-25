@@ -384,6 +384,74 @@ catatan kejenuhan MS5803-01BA.
    (heartbeat gateway 20 Hz + watchdog relay 1 detik).
 4. Periksa log GS: tidak ada lagi banjir log per pesan.
 
+---
+
+## 8. Ultrasonik JSN-SR04T (branch `bre/ultrasonic`, numpang di atas Fase-0)
+
+Dua sensor ultrasonik waterproof **JSN-SR04T-V3.3** — depan & belakang —
+untuk mendeteksi ujung kapal sebelum robot menabraknya (pelengkap
+limit switch yang hanya bekerja setelah kontak). Branch ini dibuat dari
+`bre/fase-0` (commit `f2903e8`) dan PR-nya menargetkan `bre/fase-0`
+sebagai base, bukan `main`.
+
+### 8.1 File baru
+
+| File | Isi |
+|---|---|
+| `ros2_ws/src/brushkart_sensor/brushkart_sensor/ultrasonic_node.py` | Node pembaca 2 sensor (lihat §8.2) |
+
+### 8.2 `ultrasonic_node.py` — FUNGSI & VARIABEL
+
+**Fungsi-fungsi:**
+
+| Fungsi | Tugasnya |
+|---|---|
+| `__init__` | Baca parameter, siapkan GPIO (Trig OUTPUT, Echo INPUT), buat publisher `/range_front` & `/range_back`, timer 5 Hz |
+| `_measure(trig_pin, echo_pin)` | Kirim pulsa Trig 10 µs, tunggu Echo naik/turun dengan batas waktu, hitung jarak = waktu × kecepatan suara / 2; kembalikan `None` bila tidak ada pantulan |
+| `_publish_range(pub, frame_id, jarak)` | Susun pesan `sensor_msgs/Range` (radiation_type ULTRASOUND, field_of_view estimasi 0,26 rad); jarak `None` → `range = -1.0` |
+| `publish_ranges()` | Siklus timer: ukur depan, jeda 20 ms (anti-crosstalk), ukur belakang, publish keduanya |
+| `destroy_node` | `GPIO.cleanup()` |
+
+**Aturan semantik yang dikunci di node ini:**
+
+- `range = -1.0` = **tidak ada pantulan = ujung kapal** — kondisi valid,
+  bukan fault. State machine semi-auto harus memperlakukannya sebagai
+  "ujung ketemu".
+- **Kecepatan suara air 1480 m/s** dipakai untuk menghitung jarak
+  (bukan 343 m/s udara — selisihnya ~4,3×).
+- Kedua sensor dibaca **berurutan**, bukan bersamaan.
+
+**Variabel/parameter baru:**
+
+| Nama | Nilai bawaan | Fungsi |
+|---|---|---|
+| `front_trig_pin` / `front_echo_pin` (parameter) | 17 / 27 | Pin BCM sensor depan |
+| `back_trig_pin` / `back_echo_pin` (parameter) | 20 / 21 | Pin BCM sensor belakang |
+| `sound_speed_m_s` (parameter) | 1480.0 | Kecepatan suara di air (m/s); air laut ~1500–1530 |
+| `publish_rate_hz` (parameter) | 5.0 | Laju publikasi `/range_front` & `/range_back` |
+| `min_range_m` / `max_range_m` (parameter) | 0.2 / 6.0 | Rentang valid sensor (meter) |
+| `ECHO_TIMEOUT_S` (konstanta) | 0.05 | Batas tunggu Echo sebelum dianggap no-echo |
+| `JEDA_ANTAR_SENSOR_S` (konstanta) | 0.02 | Jeda antar sensor, anti-crosstalk |
+| `FIELD_OF_VIEW_RAD` (konstanta) | 0.26 | Sudut beam JSN-SR04T (perkiraan, ~15°) |
+
+### 8.3 File yang diubah untuk mendaftarkan node
+
+| File | Perubahan |
+|---|---|
+| `brushkart_sensor/setup.py` | ➕ console script `ultrasonic_node = brushkart_sensor.ultrasonic_node:main` |
+| `brushkart_sensor/package.xml` | ➕ `<depend>sensor_msgs</depend>` (untuk `Range`) |
+| `brushkart_ur_bringup/launch/ur.launch.py` | ➕ Node `ultrasonic_node` (dinyalakan bersama stack UR) |
+| `README.md` | ➕ Bagian "Sensor ultrasonik JSN-SR04T" (tabel pin, topic, aturan) |
+
+### 8.4 Yang belum dikerjakan
+
+- State machine semi-auto **belum** membaca `/range_front` / `/range_back`
+  — topic sudah tersedia, logika deteksi ujung lane menyusul saat Fase 3.
+- Kalibrasi kecepatan suara air laut & tes jarak di air (ember/kolam
+  dulu) — wajib sebelum mengandalkan angka jaraknya di kapal.
+- `robot_state_node` belum menampilkan status ultrasonik (bisa
+  menyusul bila diperlukan di GUI).
+
 ## Terkait
 
 - [[project_review_201026]]

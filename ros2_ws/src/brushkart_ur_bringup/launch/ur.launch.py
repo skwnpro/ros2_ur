@@ -13,9 +13,10 @@ Node yang dinyalakan:
   1. sensor_node           — BNO055 + MS5803 -> /sensor_data
   2. network_monitor_node  — kesehatan tether  -> /network_status
   3. relay_operator_node   — GPIO relay (hidrolik + thruster)
-  4. camera_node (utama)   — IMX290 CSI di namespace /camera,
+  4. ultrasonic_node       — JSN-SR04T depan/belakang -> /range_front & /range_back
+  5. camera_node (utama)   — IMX290 CSI di namespace /camera,
                              dibungkus prefix libcamerify
-  5. camera_node x2 (USB)  — namespace /camera_usb1 & /camera_usb2,
+  6. camera_node x2 (USB)  — namespace /camera_usb1 & /camera_usb2,
                              V4L2 native TANPA libcamerify (opsional)
 
 PRASYARAT kamera utama: overlay imx290 harus sudah ter-load
@@ -66,6 +67,13 @@ def generate_launch_description():
             package='brushkart_operator',
             executable='relay_operator_node',
             name='relay_operator_node',
+            output='screen',
+        ),
+
+        Node(
+            package='brushkart_sensor',
+            executable='ultrasonic_node',
+            name='ultrasonic_node',
             output='screen',
         ),
 
